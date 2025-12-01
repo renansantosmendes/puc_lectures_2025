@@ -10,8 +10,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from .models import ModelManager
-from .schemas import (
+from models import ModelManager
+from schemas import (
     PredictionRequest,
     PredictionResponse,
     BatchPredictionRequest,

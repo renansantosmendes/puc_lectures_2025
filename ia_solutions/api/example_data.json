@@ -1,57 +1,33 @@
 {
-  "description": "Example fetal health data for API testing",
+  "description": "Example fetal health data for API testing (reduced dataset with 4 features)",
   "examples": [
     {
-      "name": "Normal Case",
+      "name": "Normal Case Example 1",
       "features": {
-        "baseline_value": 120.0,
+        "severe_decelerations": 0.0,
         "accelerations": 0.0,
         "fetal_movement": 0.0,
-        "uterine_contractions": 0.0,
-        "light_decelerations": 0.0,
-        "severe_decelerations": 0.0,
-        "prolongued_decelerations": 0.0,
-        "abnormal_short_term_variability": 73.0,
-        "mean_value_of_short_term_variability": 0.5,
-        "percentage_of_time_with_abnormal_long_term_variability": 43.0,
-        "mean_value_of_long_term_variability": 2.4,
-        "histogram_width": 64.0,
-        "histogram_min": 62.0,
-        "histogram_max": 126.0,
-        "histogram_number_of_peaks": 2.0,
-        "histogram_number_of_zeroes": 0.0,
-        "histogram_mode": 120.0,
-        "histogram_mean": 137.0,
-        "histogram_median": 121.0,
-        "histogram_variance": 73.0,
-        "histogram_tendency": 1.0
+        "uterine_contractions": 0.0
       },
       "expected_status": "Normal"
     },
     {
-      "name": "Suspect Case",
+      "name": "Normal Case Example 2",
       "features": {
-        "baseline_value": 132.0,
+        "severe_decelerations": 0.0,
         "accelerations": 0.006,
         "fetal_movement": 0.0,
-        "uterine_contractions": 0.006,
-        "light_decelerations": 0.003,
-        "severe_decelerations": 0.0,
-        "prolongued_decelerations": 0.0,
-        "abnormal_short_term_variability": 17.0,
-        "mean_value_of_short_term_variability": 2.1,
-        "percentage_of_time_with_abnormal_long_term_variability": 0.0,
-        "mean_value_of_long_term_variability": 10.4,
-        "histogram_width": 130.0,
-        "histogram_min": 68.0,
-        "histogram_max": 198.0,
-        "histogram_number_of_peaks": 6.0,
-        "histogram_number_of_zeroes": 1.0,
-        "histogram_mode": 141.0,
-        "histogram_mean": 136.0,
-        "histogram_median": 140.0,
-        "histogram_variance": 12.0,
-        "histogram_tendency": 0.0
+        "uterine_contractions": 0.006
+      },
+      "expected_status": "Normal"
+    },
+    {
+      "name": "Suspect Case Example",
+      "features": {
+        "severe_decelerations": 0.001,
+        "accelerations": 0.003,
+        "fetal_movement": 0.001,
+        "uterine_contractions": 0.004
       },
       "expected_status": "Suspect"
     }

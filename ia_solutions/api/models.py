@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from .schemas import FetalHealthFeatures, PredictionResponse
+from schemas import FetalHealthFeatures, PredictionResponse
 
 
 class ModelManager:
@@ -22,8 +22,9 @@ class ModelManager:
     Loads models on initialization and provides methods for making predictions.
     """
     
-    # Model configuration
-    MODELS_DIR = "ia_solutions/models"
+    # Model configuration - use absolute path
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    MODELS_DIR = os.path.join(BASE_DIR, "models")
     MODEL_FILES = {
         "decision_tree": "decision_tree_model.pkl",
         "gradient_boosting": "gradient_boosting_model.pkl",

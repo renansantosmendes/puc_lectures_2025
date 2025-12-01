@@ -14,12 +14,12 @@ class FetalHealthFeatures(BaseModel):
     Fetal health features for prediction.
     
     All features should be numerical values representing various
-    fetal health indicators.
+    fetal health indicators from the reduced dataset.
     """
-    baseline_value: float = Field(
+    severe_decelerations: float = Field(
         ...,
-        description="Baseline fetal heart rate (beats per minute)",
-        example=120.0
+        description="Number of severe decelerations per second",
+        example=0.0
     )
     accelerations: float = Field(
         ...,
@@ -36,116 +36,14 @@ class FetalHealthFeatures(BaseModel):
         description="Number of uterine contractions per second",
         example=0.0
     )
-    light_decelerations: float = Field(
-        ...,
-        description="Number of light decelerations per second",
-        example=0.0
-    )
-    severe_decelerations: float = Field(
-        ...,
-        description="Number of severe decelerations per second",
-        example=0.0
-    )
-    prolongued_decelerations: float = Field(
-        ...,
-        description="Number of prolonged decelerations per second",
-        example=0.0
-    )
-    abnormal_short_term_variability: float = Field(
-        ...,
-        description="Percentage of time with abnormal short term variability",
-        example=73.0
-    )
-    mean_value_of_short_term_variability: float = Field(
-        ...,
-        description="Mean value of short term variability",
-        example=0.5
-    )
-    percentage_of_time_with_abnormal_long_term_variability: float = Field(
-        ...,
-        description="Percentage of time with abnormal long term variability",
-        example=43.0
-    )
-    mean_value_of_long_term_variability: float = Field(
-        ...,
-        description="Mean value of long term variability",
-        example=2.4
-    )
-    histogram_width: float = Field(
-        ...,
-        description="Width of the FHR histogram",
-        example=64.0
-    )
-    histogram_min: float = Field(
-        ...,
-        description="Minimum value of the FHR histogram",
-        example=62.0
-    )
-    histogram_max: float = Field(
-        ...,
-        description="Maximum value of the FHR histogram",
-        example=126.0
-    )
-    histogram_number_of_peaks: float = Field(
-        ...,
-        description="Number of peaks in the FHR histogram",
-        example=2.0
-    )
-    histogram_number_of_zeroes: float = Field(
-        ...,
-        description="Number of zeros in the FHR histogram",
-        example=0.0
-    )
-    histogram_mode: float = Field(
-        ...,
-        description="Mode of the FHR histogram",
-        example=120.0
-    )
-    histogram_mean: float = Field(
-        ...,
-        description="Mean of the FHR histogram",
-        example=137.0
-    )
-    histogram_median: float = Field(
-        ...,
-        description="Median of the FHR histogram",
-        example=121.0
-    )
-    histogram_variance: float = Field(
-        ...,
-        description="Variance of the FHR histogram",
-        example=73.0
-    )
-    histogram_tendency: float = Field(
-        ...,
-        description="Tendency of the FHR histogram",
-        example=1.0
-    )
 
     def to_list(self) -> list[float]:
         """Convert features to a list in the correct order."""
         return [
-            self.baseline_value,
+            self.severe_decelerations,
             self.accelerations,
             self.fetal_movement,
             self.uterine_contractions,
-            self.light_decelerations,
-            self.severe_decelerations,
-            self.prolongued_decelerations,
-            self.abnormal_short_term_variability,
-            self.mean_value_of_short_term_variability,
-            self.percentage_of_time_with_abnormal_long_term_variability,
-            self.mean_value_of_long_term_variability,
-            self.histogram_width,
-            self.histogram_min,
-            self.histogram_max,
-            self.histogram_number_of_peaks,
-            self.histogram_number_of_zeroes,
-            self.histogram_mode,
-            self.histogram_mean,
-            self.histogram_median,
-            self.histogram_variance,
-            self.histogram_tendency,
         ]
 
 

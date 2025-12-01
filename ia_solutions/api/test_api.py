@@ -41,30 +41,13 @@ def test_single_prediction():
     """Test single prediction endpoint."""
     print_section("Testing Single Prediction Endpoint")
     
-    # Example features (Normal case)
+    # Example features (Normal case) - 4 features from reduced dataset
     payload = {
         "features": {
-            "baseline_value": 120.0,
+            "severe_decelerations": 0.0,
             "accelerations": 0.0,
             "fetal_movement": 0.0,
-            "uterine_contractions": 0.0,
-            "light_decelerations": 0.0,
-            "severe_decelerations": 0.0,
-            "prolongued_decelerations": 0.0,
-            "abnormal_short_term_variability": 73.0,
-            "mean_value_of_short_term_variability": 0.5,
-            "percentage_of_time_with_abnormal_long_term_variability": 43.0,
-            "mean_value_of_long_term_variability": 2.4,
-            "histogram_width": 64.0,
-            "histogram_min": 62.0,
-            "histogram_max": 126.0,
-            "histogram_number_of_peaks": 2.0,
-            "histogram_number_of_zeroes": 0.0,
-            "histogram_mode": 120.0,
-            "histogram_mean": 137.0,
-            "histogram_median": 121.0,
-            "histogram_variance": 73.0,
-            "histogram_tendency": 1.0
+            "uterine_contractions": 0.0
         },
         "model_name": "gradient_boosting"
     }
@@ -82,50 +65,22 @@ def test_batch_prediction():
     payload = {
         "features_list": [
             {
-                "baseline_value": 120.0,
+                "severe_decelerations": 0.0,
                 "accelerations": 0.0,
                 "fetal_movement": 0.0,
-                "uterine_contractions": 0.0,
-                "light_decelerations": 0.0,
-                "severe_decelerations": 0.0,
-                "prolongued_decelerations": 0.0,
-                "abnormal_short_term_variability": 73.0,
-                "mean_value_of_short_term_variability": 0.5,
-                "percentage_of_time_with_abnormal_long_term_variability": 43.0,
-                "mean_value_of_long_term_variability": 2.4,
-                "histogram_width": 64.0,
-                "histogram_min": 62.0,
-                "histogram_max": 126.0,
-                "histogram_number_of_peaks": 2.0,
-                "histogram_number_of_zeroes": 0.0,
-                "histogram_mode": 120.0,
-                "histogram_mean": 137.0,
-                "histogram_median": 121.0,
-                "histogram_variance": 73.0,
-                "histogram_tendency": 1.0
+                "uterine_contractions": 0.0
             },
             {
-                "baseline_value": 132.0,
+                "severe_decelerations": 0.0,
                 "accelerations": 0.006,
                 "fetal_movement": 0.0,
-                "uterine_contractions": 0.006,
-                "light_decelerations": 0.003,
-                "severe_decelerations": 0.0,
-                "prolongued_decelerations": 0.0,
-                "abnormal_short_term_variability": 17.0,
-                "mean_value_of_short_term_variability": 2.1,
-                "percentage_of_time_with_abnormal_long_term_variability": 0.0,
-                "mean_value_of_long_term_variability": 10.4,
-                "histogram_width": 130.0,
-                "histogram_min": 68.0,
-                "histogram_max": 198.0,
-                "histogram_number_of_peaks": 6.0,
-                "histogram_number_of_zeroes": 1.0,
-                "histogram_mode": 141.0,
-                "histogram_mean": 136.0,
-                "histogram_median": 140.0,
-                "histogram_variance": 12.0,
-                "histogram_tendency": 0.0
+                "uterine_contractions": 0.006
+            },
+            {
+                "severe_decelerations": 0.001,
+                "accelerations": 0.003,
+                "fetal_movement": 0.001,
+                "uterine_contractions": 0.004
             }
         ],
         "model_name": "gradient_boosting"
@@ -141,27 +96,10 @@ def test_different_models():
     print_section("Testing Different Models")
     
     features = {
-        "baseline_value": 120.0,
+        "severe_decelerations": 0.0,
         "accelerations": 0.0,
         "fetal_movement": 0.0,
-        "uterine_contractions": 0.0,
-        "light_decelerations": 0.0,
-        "severe_decelerations": 0.0,
-        "prolongued_decelerations": 0.0,
-        "abnormal_short_term_variability": 73.0,
-        "mean_value_of_short_term_variability": 0.5,
-        "percentage_of_time_with_abnormal_long_term_variability": 43.0,
-        "mean_value_of_long_term_variability": 2.4,
-        "histogram_width": 64.0,
-        "histogram_min": 62.0,
-        "histogram_max": 126.0,
-        "histogram_number_of_peaks": 2.0,
-        "histogram_number_of_zeroes": 0.0,
-        "histogram_mode": 120.0,
-        "histogram_mean": 137.0,
-        "histogram_median": 121.0,
-        "histogram_variance": 73.0,
-        "histogram_tendency": 1.0
+        "uterine_contractions": 0.0
     }
     
     for model_name in ["decision_tree", "gradient_boosting"]:
@@ -169,9 +107,60 @@ def test_different_models():
         payload = {"features": features, "model_name": model_name}
         response = requests.post(f"{BASE_URL}/predict", json=payload)
         print(f"  Status Code: {response.status_code}")
-        print(f"  Prediction: {response.json()['health_status']}")
-        if response.json().get('confidence'):
-            print(f"  Confidence: {response.json()['confidence']:.2%}")
+        if response.status_code == 200:
+            print(f"  Prediction: {response.json()['health_status']}")
+            if response.json().get('confidence'):
+                print(f"  Confidence: {response.json()['confidence']:.2%}")
+        else:
+            print(f"  Error: {response.json()}")
+
+
+def test_various_cases():
+    """Test various prediction cases."""
+    print_section("Testing Various Cases")
+    
+    test_cases = [
+        {
+            "name": "Normal Case 1",
+            "features": {
+                "severe_decelerations": 0.0,
+                "accelerations": 0.0,
+                "fetal_movement": 0.0,
+                "uterine_contractions": 0.0
+            }
+        },
+        {
+            "name": "Normal Case 2",
+            "features": {
+                "severe_decelerations": 0.0,
+                "accelerations": 0.006,
+                "fetal_movement": 0.0,
+                "uterine_contractions": 0.006
+            }
+        },
+        {
+            "name": "Suspect Case",
+            "features": {
+                "severe_decelerations": 0.001,
+                "accelerations": 0.003,
+                "fetal_movement": 0.001,
+                "uterine_contractions": 0.004
+            }
+        }
+    ]
+    
+    for case in test_cases:
+        print(f"\n{case['name']}:")
+        payload = {"features": case['features'], "model_name": "gradient_boosting"}
+        response = requests.post(f"{BASE_URL}/predict", json=payload)
+        if response.status_code == 200:
+            result = response.json()
+            print(f"  Status: {result['health_status']}")
+            print(f"  Code: {result['prediction_code']}")
+            if result.get('confidence'):
+                print(f"  Confidence: {result['confidence']:.2%}")
+        else:
+            print(f"  Error: {response.json()}")
 
 
 def main():
@@ -187,6 +176,7 @@ def main():
         test_single_prediction()
         test_batch_prediction()
         test_different_models()
+        test_various_cases()
         
         print_section("All Tests Completed Successfully!")
         
@@ -194,7 +184,7 @@ def main():
         print("\n[ERROR] Could not connect to the API.")
         print("Make sure the API is running at:", BASE_URL)
         print("\nStart the API with:")
-        print("  uvicorn main:app --reload")
+        print("  python -m uvicorn main:app --reload")
     except Exception as e:
         print(f"\n[ERROR] An error occurred: {str(e)}")
 
