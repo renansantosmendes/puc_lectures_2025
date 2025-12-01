@@ -25,19 +25,45 @@ RANDOM_STATE = 42
 MAX_DEPTH = 10
 N_ESTIMATORS = 100
 LEARNING_RATE = 0.01
+MODELS_DIR = 'ia_solutions/models'
 
 
-def load_fetal_health_data(url: str) -> pd.DataFrame:
+def load_fetal_health_data(url: str, max_retries: int = 3) -> pd.DataFrame:
     """
-    Load fetal health data from a URL.
+    Load fetal health data from a URL with retry mechanism.
     
     Args:
         url: URL of the CSV file containing the data
+        max_retries: Maximum number of retry attempts
         
     Returns:
         DataFrame with fetal health data
+        
+    Raises:
+        Exception: If data cannot be loaded after all retries
     """
-    return pd.read_csv(url)
+    import time
+    from urllib.error import URLError
+    
+    for attempt in range(max_retries):
+        try:
+            print(f"Attempting to load data (attempt {attempt + 1}/{max_retries})...")
+            data = pd.read_csv(url)
+            print("Data loaded successfully!")
+            return data
+        except (URLError, ConnectionResetError, TimeoutError, Exception) as e:
+            if attempt < max_retries - 1:
+                wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                print(f"Connection failed: {type(e).__name__}. Retrying in {wait_time} seconds...")
+                time.sleep(wait_time)
+            else:
+                print(f"\n⚠️  Failed to load data from URL after {max_retries} attempts.")
+                print("This is likely due to network restrictions or firewall blocking the connection.")
+                print("\nSuggested solutions:")
+                print("1. Try running from a different network")
+                print("2. Download the file manually and update the DATA_URL to the local path")
+                print(f"3. Download from: {url}")
+                raise Exception(f"Could not load data after {max_retries} attempts. Last error: {e}")
 
 
 def prepare_features_and_target(data: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
@@ -158,6 +184,32 @@ def train_gradient_boosting(
     return gradient_boosting_classifier
 
 
+def save_model(model, model_name: str, output_dir: str = MODELS_DIR) -> str:
+    """
+    Save a trained model to disk using pickle.
+    
+    Args:
+        model: Trained model to save
+        model_name: Name for the model file (without extension)
+        output_dir: Directory to save the model
+        
+    Returns:
+        Path to the saved model file
+    """
+    # Create models directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Create full path for the model file
+    model_path = os.path.join(output_dir, f"{model_name}.pkl")
+    
+    # Save the model
+    with open(model_path, 'wb') as file:
+        pickle.dump(model, file)
+    
+    print(f"✅ Model saved to: {model_path}")
+    return model_path
+
+
 def evaluate_model(
     model,
     features_test: pd.DataFrame,
@@ -210,6 +262,9 @@ def main():
     )
     print(f"Decision Tree Accuracy: {decision_tree_accuracy:.4f}")
     
+    # Save Decision Tree model
+    save_model(decision_tree_model, "decision_tree_model")
+    
     # Training and evaluation - Gradient Boosting
     print("\n=== Gradient Boosting Classifier ===")
     gradient_boosting_model = train_gradient_boosting(features_train, target_train)
@@ -219,6 +274,11 @@ def main():
         target_test
     )
     print(f"Gradient Boosting Accuracy: {gradient_boosting_accuracy:.4f}")
+    
+    # Save Gradient Boosting model
+    save_model(gradient_boosting_model, "gradient_boosting_model")
+    
+    print("\n🎉 Training completed! Models saved successfully.")
 
 
 if __name__ == "__main__":
