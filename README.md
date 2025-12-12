@@ -1,6 +1,6 @@
-# PUC Lectures 2025
+# AI Runtime Core
 
-Repository for PUC lectures containing machine learning projects, deep learning frameworks, and generative AI applications.
+AI Runtime Core is a repository for PUC lectures containing machine learning projects, deep learning frameworks, and generative AI applications.
 
 ## 📋 Table of Contents
 
@@ -29,7 +29,7 @@ This repository contains educational materials and practical implementations for
 ## 📁 Project Structure
 
 ```
-puc_lectures_2025/
+ai_runtime_core/
 ├── ia_solutions/                    # Main ML solutions directory
 │   ├── api/                        # FastAPI REST API application
 │   │   ├── main.py                # API endpoints and application
@@ -218,8 +218,8 @@ Features:
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/renansantosmendes/puc_lectures_2025.git
-cd puc_lectures_2025
+git clone https://github.com/renansantosmendes/ai_runtime_core.git
+cd ai_runtime_core
 ```
 
 2. **Create virtual environment** (recommended)
@@ -436,4 +436,4 @@ For questions or support regarding this repository, please contact the course in
 ---
 
 **Last Updated**: November 2025  
-**Repository**: [puc_lectures_2025](https://github.com/renansantosmendes/puc_lectures_2025)
+**Repository**: [ai_runtime_core](https://github.com/renansantosmendes/ai_runtime_core)
