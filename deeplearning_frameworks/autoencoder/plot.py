@@ -162,7 +162,7 @@ class PlotOutlierAnalyzer:
         over epochs, with a vertical line marking the best epoch
         (lowest validation loss).
         """
-        plt.figure(figsize=(12, 5))
+        plt.figure(figsize=(14, 5))
         plt.plot(self.train_losses, label="Train Loss", linewidth=2)
         plt.plot(self.val_losses, label="Val Loss", linewidth=2)
         plt.axvline(
