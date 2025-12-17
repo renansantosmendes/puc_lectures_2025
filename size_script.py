@@ -36,7 +36,7 @@ def get_folders_sizes(base_path: str) -> List[Tuple[str, int]]:
 
 
 if __name__ == "__main__":
-    base_directory = "C:\\Users\\renan\\Downloads"
+    base_directory = "C:\\"
 
     result = get_folders_sizes(base_directory)
 
