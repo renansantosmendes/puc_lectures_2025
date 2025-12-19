@@ -13,7 +13,10 @@ setup(
         "numpy",
         "pandas",
         "torch",
-        "scikit-learn"
+        "scikit-learn",
+        "matplotlib",
+        "yfinance",
+        "joblib"
     ],
     include_package_data=True,
     zip_safe=False,

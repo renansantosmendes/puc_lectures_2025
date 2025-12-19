@@ -1,4 +1,4 @@
-name: CI - Fetal Health API
+name: CI - AI Runtime Core
 
 on:
   push:
@@ -27,12 +27,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        if [ -f ia_solutions/api/requirements.txt ]; then pip install -r ia_solutions/api/requirements.txt; fi
-        # Instala dependências adicionais de teste caso não estejam no requirements
-        pip install pytest pytest-cov httpx
+        # Find all requirements.txt files and install them
+        find . -name "requirements.txt" -exec pip install -r {} +
+        # Install additional test and visualization dependencies
+        pip install pytest pytest-cov httpx matplotlib yfinance
+        # Install the package in editable mode if setup.py exists
+        if [ -f setup.py ]; then pip install -e .; fi
 
     - name: Run Tests with Pytest
-      working-directory: ./ia_solutions
       run: |
-        # Executa o pytest usando o arquivo de configuração pytest.ini local
+        # Run pytest from root to cover all subdirectories
         pytest --cov=. --cov-report=xml
