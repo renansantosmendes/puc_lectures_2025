@@ -27,8 +27,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        # Find all requirements.txt files and install them
-        find . -name "requirements.txt" -exec pip install -r {} +
+        # Find all requirements.txt files and install them individually
+        find . -name "requirements.txt" -print0 | xargs -0 -I {} pip install -r {}
         # Install additional test and visualization dependencies
         pip install pytest pytest-cov httpx matplotlib yfinance
         # Install the package in editable mode if setup.py exists
