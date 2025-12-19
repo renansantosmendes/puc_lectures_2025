@@ -17,14 +17,16 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import pandas as pd
 from torch.utils.data import Dataset, DataLoader, random_split
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from shared.model import ForecastLSTMAutoencoder
+from shared.model import ForecastLSTMAutoencoder, LSTMAttentionAutoencoder
 from shared.config import ModelConfig, PathConfig
 from shared.data_processing import prepare_data_for_training
+# from ai_runtime_core.deeplearning_frameworks.autoencoder.plot import PlotOutlierAnalyzer
 
 
 class TimeSeriesForecastDataset(Dataset):
@@ -176,6 +178,115 @@ def train_model(
     return training_losses, validation_losses, best_epoch
 
 
+def train_autoencoder(
+    model: nn.Module,
+    train_loader: DataLoader,
+    validation_loader: DataLoader,
+    number_of_epochs: int,
+    patience: int,
+    training_device: torch.device,
+    optimizer: optim.Optimizer,
+    scheduler: optim.lr_scheduler._LRScheduler,
+    loss_criterion: nn.Module
+) -> Tuple[List[float], List[float], int]:
+    """
+    Train an autoencoder model with validation and early stopping.
+
+    Args:
+        model: Autoencoder model.
+        train_loader: DataLoader with input batches only.
+        validation_loader: DataLoader with input batches only.
+        number_of_epochs: Maximum number of epochs.
+        patience: Early stopping patience.
+        training_device: CPU or CUDA device.
+        optimizer: Optimizer.
+        scheduler: Learning rate scheduler.
+        loss_criterion: Reconstruction loss (e.g., MSELoss).
+
+    Returns:
+        Training losses, validation losses, best epoch.
+    """
+    best_validation_loss = float("inf")
+    best_epoch = 0
+    best_model_state = None
+
+    training_losses = []
+    validation_losses = []
+    patience_counter = 0
+
+    print("Starting autoencoder training...")
+
+    for epoch in range(1, number_of_epochs + 1):
+        # -------- Training --------
+        model.train()
+        epoch_training_loss = 0.0
+
+        for input_batch, _ in train_loader:
+            input_batch = input_batch.to(training_device)
+
+            optimizer.zero_grad()
+            reconstruction = model(input_batch)
+            loss = loss_criterion(reconstruction, input_batch)
+            loss.backward()
+
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+            scheduler.step()
+
+            epoch_training_loss += loss.item()
+
+        avg_train_loss = epoch_training_loss / len(train_loader)
+        training_losses.append(avg_train_loss)
+
+        # -------- Validation --------
+        model.eval()
+        epoch_validation_loss = 0.0
+
+        with torch.no_grad():
+            for validation_batch, _ in validation_loader:
+                validation_batch = validation_batch.to(training_device)
+                reconstruction = model(validation_batch)
+                loss = loss_criterion(reconstruction, validation_batch)
+                epoch_validation_loss += loss.item()
+
+        avg_val_loss = epoch_validation_loss / len(validation_loader)
+        validation_losses.append(avg_val_loss)
+
+        current_lr = optimizer.param_groups[0]["lr"]
+
+        print(
+            f"Epoch {epoch:03d} | "
+            f"Train Loss: {avg_train_loss:.6f} | "
+            f"Val Loss: {avg_val_loss:.6f} | "
+            f"LR: {current_lr:.6e}"
+        )
+
+        # -------- Early stopping --------
+        if avg_val_loss < best_validation_loss - 1e-8:
+            best_validation_loss = avg_val_loss
+            best_epoch = epoch
+            best_model_state = model.state_dict().copy()
+            patience_counter = 0
+        else:
+            patience_counter += 1
+
+        if patience_counter >= patience:
+            print(
+                f"Early stopping at epoch {epoch}. "
+                f"Best Val Loss: {best_validation_loss:.6f} (epoch {best_epoch})"
+            )
+            break
+
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+        print(
+            f"Model restored to best epoch {best_epoch} "
+            f"with Val Loss {best_validation_loss:.6f}"
+        )
+
+    return training_losses, validation_losses, best_epoch
+
+
 def save_model_artifacts(
     model: nn.Module,
     scaler,
@@ -214,6 +325,91 @@ def save_model_artifacts(
     with open(paths.config_path, 'w') as f:
         json.dump(config_dict, f, indent=2)
     print(f"Configuration saved to {paths.config_path}")
+
+
+def create_outlier_report(
+    indices: np.ndarray,
+    dates: np.ndarray,
+    prices: np.ndarray,
+    errors: np.ndarray,
+    sequence_length: int
+) -> pd.DataFrame:
+    """Create a report of detected outliers."""
+    report_data = {
+        "Index": indices.reshape(-1),
+        "Date": dates[indices].reshape(-1),
+        "Price": prices[indices].reshape(-1),
+        "Error": errors[indices].reshape(-1)
+    }
+    return pd.DataFrame(report_data)
+
+
+def print_error_statistics(errors: np.ndarray) -> None:
+    """Print statistical summary of reconstruction errors."""
+    print("\nError Statistics:")
+    print(f"Mean: {np.mean(errors):.6e}")
+    print(f"Std:  {np.std(errors):.6e}")
+    print(f"Min:  {np.min(errors):.6e}")
+    print(f"Max:  {np.max(errors):.6e}")
+    print(f"95th: {np.percentile(errors, 95):.6e}")
+
+
+def compute_reconstruction_errors(
+    model: nn.Module,
+    input_data: np.ndarray,
+    evaluation_device: torch.device,
+    evaluation_batch_size: int = 1024
+) -> np.ndarray:
+    """
+    Compute reconstruction errors for all samples.
+
+    Args:
+        model: Trained model.
+        input_data: Input sequences array.
+        target_data: Target values array.
+        evaluation_device: Device for evaluation.
+        evaluation_batch_size: Batch size for evaluation.
+
+    Returns:
+        Array of mean squared errors per sample.
+    """
+    model.eval()
+    input_tensor = torch.FloatTensor(input_data).to(evaluation_device)
+
+    with torch.no_grad():
+        predictions_list: List[np.ndarray] = []
+
+        for batch_start in range(0, len(input_tensor), evaluation_batch_size):
+            batch = input_tensor[batch_start: batch_start + evaluation_batch_size]
+            predictions_list.append(model(batch).cpu().numpy())
+
+        predictions = np.vstack(predictions_list)
+
+    # Calculate MSE per sequence: mean over time (axis 1) and feature (axis 2) dimensions
+    reconstruction_errors = np.mean((input_data - predictions) ** 2, axis=(1, 2))
+    return reconstruction_errors
+
+
+def detect_outliers_lognormal(
+    errors: np.ndarray,
+    sigma_multiplier: float = 3.0
+) -> Tuple[np.ndarray, float]:
+    """
+    Detect outliers using lognormal distribution threshold.
+
+    Args:
+        errors: Array of reconstruction errors.
+        sigma_multiplier: Number of standard deviations for threshold.
+
+    Returns:
+        Tuple containing boolean mask of outliers and threshold value.
+    """
+    log_errors = np.log1p(errors)
+    mean_log_error = np.mean(log_errors)
+    std_log_error = np.std(log_errors)
+    threshold = np.expm1(mean_log_error + sigma_multiplier * std_log_error)
+    outliers_mask = errors > threshold
+    return outliers_mask, threshold
 
 
 def run_training(config: ModelConfig = None, paths: PathConfig = None) -> None:
@@ -256,7 +452,7 @@ def run_training(config: ModelConfig = None, paths: PathConfig = None) -> None:
     print(f"Training: {len(train_dataset)} sequences | Validation: {len(val_dataset)} sequences")
     
     # Initialize model
-    model = ForecastLSTMAutoencoder(
+    model = LSTMAttentionAutoencoder(
         sequence_length=config.sequence_length,
         input_dimension=config.input_dimension,
         hidden_dimension=config.hidden_dim,
@@ -276,7 +472,7 @@ def run_training(config: ModelConfig = None, paths: PathConfig = None) -> None:
     )
     
     # Train model
-    training_losses, validation_losses, best_epoch = train_model(
+    training_losses, validation_losses, best_epoch = train_autoencoder(
         model=model,
         train_loader=train_loader,
         validation_loader=val_loader,
@@ -290,6 +486,55 @@ def run_training(config: ModelConfig = None, paths: PathConfig = None) -> None:
     
     # Save artifacts
     save_model_artifacts(model, scaler, config, paths)
+    
+    reconstruction_errors = compute_reconstruction_errors(
+        model,
+        input_sequences,
+        device
+    )
+
+    outliers_mask, threshold = detect_outliers_lognormal(reconstruction_errors)
+
+    number_of_outliers = outliers_mask.sum()
+    outlier_percentage = number_of_outliers / len(outliers_mask) * 100.0
+
+    print(f"Threshold (lognormal, 3 sigma): {threshold:.6e}")
+    print(f"Outliers detected: {number_of_outliers} / {len(outliers_mask)} ({outlier_percentage:.2f}%)")
+
+    # Prepare helper arrays for the report
+    dates_array = dataframe.index[config.sequence_length:].values
+    # Handle both single ticker and multi-ticker (MultiIndex) DataFrame structures
+    if isinstance(dataframe["Close"], pd.DataFrame):
+        prices_array = dataframe["Close"].iloc[config.sequence_length:, 0].values
+    else:
+        prices_array = dataframe["Close"].values[config.sequence_length:]
+    
+    outlier_indices = np.where(outliers_mask)[0]
+    outlier_report = create_outlier_report(
+        outlier_indices,
+        dates_array,
+        prices_array,
+        reconstruction_errors,
+        config.sequence_length
+    )
+    print("\nFirst detected outliers (up to 20):")
+    print(outlier_report.head(20).to_string(index=False))
+
+    print_error_statistics(reconstruction_errors)
+
+    # analyzer = dlfr.PlotOutlierAnalyzer(
+    #     dates=dates_array,
+    #     prices=prices_array,
+    #     errors=reconstruction_errors,
+    #     outliers_mask=outliers_mask,
+    #     threshold=threshold,
+    #     train_losses=training_losses,
+    #     val_losses=validation_losses,
+    #     best_epoch=best_epoch,
+    #     seq_length=SEQUENCE_LENGTH
+    # )
+
+    # analyzer.plot_all(ticker=TICKER)
     
     print("\nTraining completed successfully!")
     print(f"Best validation loss: {min(validation_losses):.6f} at epoch {best_epoch}")
